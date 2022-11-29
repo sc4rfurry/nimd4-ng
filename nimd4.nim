@@ -136,7 +136,7 @@ let commonPorts: array[1002, int] = [
 proc main(commonPorts: array[1002, int]) =
     let numParams = paramCount()
     var
-        host = ""
+        host: string
         port: int 
         port_range: seq[string]
         all_ports: int = 65535
