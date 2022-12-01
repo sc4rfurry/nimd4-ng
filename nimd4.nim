@@ -38,7 +38,6 @@ proc banner() =
                             {underline}{green}Github{def}:     https://github.com/sc4rfurry
     """
     echo fmt"{bold}{yellow}================================================================================================{def}"
-    echo "\n"
 
 proc help() =
     echo fmt"""
@@ -138,11 +137,13 @@ proc main(commonPorts: array[1002, int]) =
     var
         host: string
         port: int 
+        timeout: int = 600
         port_range: seq[string]
         all_ports: int = 65535
     var isAllPorts: bool = false
     var isRange: bool = false
     var isCommon: bool = false
+    var isPort: bool = false
     if numParams < 3:
         banner()
         help()
@@ -153,6 +154,7 @@ proc main(commonPorts: array[1002, int]) =
                     host = paramStr(param + 1)
                 elif paramStr(param) == "-p" or paramStr(param) == "--port":
                     port = (paramStr(param + 1)).parseInt()
+                    isPort = true
                 elif paramStr(param) == "-r" or paramStr(param) == "--range":
                     var p_range: string = paramStr(param + 1)
                     port_range = (p_range.split("-"))
@@ -175,22 +177,34 @@ proc main(commonPorts: array[1002, int]) =
                     echo "Help Menu"
                 else:
                     discard
+        else:
+            banner()
+            help()
 
     
     
     banner()
-    
-    echo fmt"""
-                {blue}*******************{def} {bold}{yellow}Config{def} {blue}********************{def}
-                {blue}|{def}        {bold}{green}Host{def}:         {host}
-                {blue}|{def}        {bold}{green}Port{def}:         {port}
-                {blue}|{def}        {bold}{green}Timeout{def}:      3sec
-                {blue}|{def}        {bold}{green}Range{def}:        {isRange}
-                {blue}|{def}        {bold}{green}All Ports{def}:    {isAllPorts}
-                {blue}|{def}        {bold}{green}Common Ports{def}: {isCommon}
-                {blue}***********************************************{def}
-    """
-    
+    if port != 0:
+        echo fmt"""
+                    {blue}*******************{def} {bold}{yellow}Config{def} {blue}********************{def}
+                    {blue}|{def}        {bold}{green}Host{def}:         {host}
+                    {blue}|{def}        {bold}{green}Port{def}:         {port}
+                    {blue}|{def}        {bold}{green}Timeout{def}:      {timeout/1000} sec 
+                    {blue}|{def}        {bold}{green}Range{def}:        {isRange}
+                    {blue}|{def}        {bold}{green}All Ports{def}:    {isAllPorts}
+                    {blue}|{def}        {bold}{green}Common Ports{def}: {isCommon}
+                    {blue}***********************************************{def}
+        """, "\n"
+    else:
+        echo fmt"""
+                    {blue}*******************{def} {bold}{yellow}Config{def} {blue}********************{def}
+                    {blue}|{def}        {bold}{green}Host{def}:         {host}
+                    {blue}|{def}        {bold}{green}Timeout{def}:      {timeout/1000} sec
+                    {blue}|{def}        {bold}{green}Range{def}:        {isRange}
+                    {blue}|{def}        {bold}{green}All Ports{def}:    {isAllPorts}
+                    {blue}|{def}        {bold}{green}Common Ports{def}: {isCommon}
+                    {blue}***********************************************{def}
+        """, "\n"
     if isAllPorts:
         try:
             echo fmt"""{yellow}Warning{def} - Scanning all ports can take a long time."""
@@ -200,13 +214,13 @@ proc main(commonPorts: array[1002, int]) =
                 for port in 1..all_ports:
                     try:
                         let sok: Socket = newSocket(AF_INET, SOCK_STREAM, IPPROTO_IP)
-                        connect(sok, host, Port(port), 3024)
+                        connect(sok, host, Port(port), timeout)
                         echo fmt"{blue}Port{def} {port} {green}is open{def}"
                         sok.close()
                     except:
                         discard
             else:
-                echo "Exiting..."
+                echo fmt"{bg_red} Exiting... {def}"
                 quit(0)        
         except Exception as e:
             echo fmt"{bg_red}{e.msg}{def}"
@@ -216,7 +230,7 @@ proc main(commonPorts: array[1002, int]) =
                 for port in commonPorts:
                     try:
                         let sok: Socket = newSocket(AF_INET, SOCK_STREAM, IPPROTO_IP)
-                        connect(sok, host, Port(port), 3024)
+                        connect(sok, host, Port(port), timeout)
                         echo fmt"{blue}Port{def} {port} {green}is open{def}"
                         sok.close()
                     except:
@@ -229,7 +243,7 @@ proc main(commonPorts: array[1002, int]) =
                 for port in port_range[0].parseInt()..port_range[1].parseInt():
                     try:
                         let sok: Socket = newSocket(AF_INET, SOCK_STREAM, IPPROTO_IP)
-                        connect(sok, host, Port(port), 3024)
+                        connect(sok, host, Port(port), timeout)
                         echo fmt"{blue}Port{def} {port} {green}is open{def}"
                         sok.close()
                     except:
@@ -237,16 +251,21 @@ proc main(commonPorts: array[1002, int]) =
             except Exception as e:
                 echo fmt"{bg_red}{e.msg}{def}"
                 quit(1)
-    else:
+    elif isPort:
         try:
             let sok: Socket = newSocket(AF_INET, SOCK_STREAM, IPPROTO_IP)
-            connect(sok, host, Port(port), 3024)
+            connect(sok, host, Port(port), timeout)
             echo fmt"{blue}Port{def} {port} {green}is open{def}"
             sok.close()
         except Exception as e:
             echo fmt"{blue}Port{def} {port} {red}is closed{def}"
             echo fmt"{bg_red}{e.msg}{def}"
             quit(1)
+    else:
+        echo fmt"{bg_red}-: Invalid arguments{def}"
+        echo fmt"Please use {bold}{green}--help{def} for more information."
+        quit(1)
+
 
 
 
